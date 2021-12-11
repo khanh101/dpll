@@ -10,7 +10,7 @@ cnf2formula cnf = cnf2formula' cnf 0 []
 
 cnf2formula' :: [Clause] -> Int -> Formula -> Formula
 cnf2formula' cnf i f
-    | i < length cnf = cnf2formula' cnf (i+1) ([cnfClause2Clause' (cnf !! i) 0 []] ++ f)
+    | i < length cnf = cnf2formula' cnf (i+1) (cnfClause2Clause' (cnf !! i) 0 [] : f)
     | otherwise = f
 
 
