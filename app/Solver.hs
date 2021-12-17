@@ -1,4 +1,4 @@
-module Solver where
+module Solver (solve, Literal, Formula, Assignment) where
 
 import Data.List ( delete )
 
@@ -31,7 +31,6 @@ substitute l (x:xs)
 solve :: Formula -> (Bool, Assignment)
 solve f = solveWith f []
 
-data Action = ActionUnitProp | ActionGuess deriving (Show)
 
 -- solveWith : solve a formula, push assignment to canvas and return
 solveWith :: Formula -> Assignment -> (Bool, Assignment)

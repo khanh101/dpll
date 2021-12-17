@@ -1,4 +1,4 @@
-module Parser where
+module Parser (parse) where
 
 import Language.CNF.Parse.ParseDIMACS (parseFile, Clause, CNF (clauses, CNF, numVars, numClauses))
 import Data.Either (fromRight)
