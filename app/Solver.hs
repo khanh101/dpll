@@ -6,53 +6,45 @@ type Literal = Int
 
 type Formula = [[Literal]]
 
--- isEmptyFormula : formula is empty
-isEmptyFormula :: Formula -> Bool 
-isEmptyFormula = null
+type Assignment = [Literal]
 
--- hasEmptyClause : formula has at least an empty clause
-hasEmptyClause :: Formula -> Bool 
-hasEmptyClause [] = False 
-hasEmptyClause (x:xs)
-    | null x = True
-    | otherwise = hasEmptyClause xs
+data ScanResult = ScanEmptyClause | ScanUnitClause Int | ScanNothing deriving (Show)
+-- scanFormula
+scanFormula :: Formula -> ScanResult
+scanFormula [] = ScanNothing
+scanFormula (x:xs)
+    | null x = ScanEmptyClause -- empty clause
+    | length x == 1 = ScanUnitClause (head x) -- unit clause
+    | otherwise = scanFormula xs -- recursion
 
--- getUnitClause : get clause idx with unit literal
--- if not exist, return length formula
-getUnitClause :: Formula -> Int 
-getUnitClause [] = 0
-getUnitClause (x:xs)
-    | length x == 1 = 0
-    | otherwise = 1 + getUnitClause xs
-
--- getUnitLiteral : get unit literal from unit clause idx
-getUnitLiteral :: Formula -> Int -> Literal
-getUnitLiteral f i = head (f !! i)
 
 
 -- substitute : set literal to true and return reduced formula
 substitute ::  Literal -> Formula -> Formula
-substitute _ []= []
+substitute _ [] = []
 substitute l (x:xs)
     | l `elem` x = substitute l xs  -- l in the first clause, remove that clause, return substitution of the rest
     | (-l) `elem` x = substitute l (delete (-l) x : xs) -- (-l) in the first clause, remove the first (-l) in the clause, return substitution of the remaining
     | otherwise = x : substitute l xs -- either l or (-l) not in the first clause, return first clause ++ substitution of the rest
 
 -- solve : formula is sat
-solve :: Formula -> (Bool, [Literal])
-solve f = solve' f []
+solve :: Formula -> (Bool, Assignment)
+solve f = solveWith f []
 
--- solve' : recursion
-solve' :: Formula -> [Literal] -> (Bool, [Literal])
-solve' f l
-    | isEmptyFormula f = (True, []) -- empty formula is sat
-    | hasEmptyClause f = (False, []) -- formula contains empty clause is unsat
-    | unitLiteral > 0 = solve' (substitute unitLiteral f) (unitLiteral:l) -- unit propagation if there is a unit literal
-    | b1 = (True, guessLiteral:l1)
-    | b2 = (True, -guessLiteral:l2)
-    | otherwise = (False, [])
-    where   unitClauseIdx = getUnitClause f
-            unitLiteral = if unitClauseIdx < length f then getUnitLiteral f unitClauseIdx else 0 
-            guessLiteral = head (head f)
-            (b1, l1) = solve' (substitute guessLiteral f) l
-            (b2, l2) = solve' (substitute (-guessLiteral) f) l
+data Action = ActionUnitProp | ActionGuess deriving (Show)
+
+-- solveWith : solve a formula, push assignment to canvas and return
+solveWith :: Formula -> Assignment -> (Bool, Assignment)
+solveWith [] canvas = (True, canvas)
+solveWith formula canvas =
+    case scanResult of  ScanEmptyClause -> (False, [])
+                        ScanUnitClause activated -> solveWith (substitute activated formula) (activated:canvas)
+                        ScanNothing
+                            | b1 -> (True, l1)
+                            | b2 -> (True, l2)
+                            | otherwise -> (False, [])
+    where 
+        scanResult = scanFormula formula
+        guess = head $ head formula
+        (b1, l1) = solveWith (substitute guess formula) (guess:canvas)
+        (b2, l2) = solveWith (substitute (-guess) formula) (-guess:canvas)
