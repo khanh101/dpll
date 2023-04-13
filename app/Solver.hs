@@ -20,12 +20,12 @@ scanFormula (x:xs)
 
 
 -- substitute : set literal to true and return reduced formula
-substitute ::  Literal -> Formula -> Formula
-substitute _ [] = []
-substitute l (x:xs)
-    | l `elem` x = substitute l xs  -- l in the first clause, remove that clause, return substitution of the rest
-    | (-l) `elem` x = substitute l (delete (-l) x : xs) -- (-l) in the first clause, remove the first (-l) in the clause, return substitution of the remaining
-    | otherwise = x : substitute l xs -- either l or (-l) not in the first clause, return first clause ++ substitution of the rest
+substitute ::  Formula -> Literal -> Formula
+substitute [] _ = []
+substitute (x:xs) l
+    | l `elem` x = substitute xs l  -- l in the first clause, remove that clause, return substitution of the rest
+    | (-l) `elem` x = substitute (delete (-l) x : xs) l -- (-l) in the first clause, remove the first (-l) in the clause, return substitution of the remaining
+    | otherwise = x : substitute xs l -- either l or (-l) not in the first clause, return first clause ++ substitution of the rest
 
 -- solve : formula is sat
 solve :: Formula -> (Bool, Assignment)
@@ -37,7 +37,7 @@ solveWith :: Formula -> Assignment -> (Bool, Assignment)
 solveWith [] canvas = (True, canvas)
 solveWith formula canvas =
     case scanResult of  ScanEmptyClause -> (False, [])
-                        ScanUnitClause activated -> solveWith (substitute activated formula) (activated:canvas)
+                        ScanUnitClause activated -> solveWith (substitute formula activated) (activated:canvas)
                         ScanNothing
                             | b1 -> (True, l1)
                             | b2 -> (True, l2)
@@ -45,5 +45,5 @@ solveWith formula canvas =
     where 
         scanResult = scanFormula formula
         guess = head $ head formula
-        (b1, l1) = solveWith (substitute guess formula) (guess:canvas)
-        (b2, l2) = solveWith (substitute (-guess) formula) (-guess:canvas)
+        (b1, l1) = solveWith (substitute formula guess) (guess:canvas)
+        (b2, l2) = solveWith (substitute formula (-guess)) (-guess:canvas)
