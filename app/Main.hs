@@ -2,7 +2,6 @@ module Main where
 import Data.Sort (sortOn)
 import Solver (solve)
 import Parser (parse)
-import System.Posix.Internals (puts)
 
 
 main :: IO ()

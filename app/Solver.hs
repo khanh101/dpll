@@ -8,42 +8,44 @@ type Formula = [[Literal]]
 
 type Assignment = [Literal]
 
-data ScanResult = ScanEmptyClause | ScanUnitClause Int | ScanNothing deriving (Show)
--- scanFormula
-scanFormula :: Formula -> ScanResult
-scanFormula [] = ScanNothing
-scanFormula (x:xs)
-    | null x = ScanEmptyClause -- empty clause
-    | length x == 1 = ScanUnitClause (head x) -- unit clause
-    | otherwise = scanFormula xs -- recursion
+data Scan = Unsat | Unit Int | Empty deriving (Show)
+
+-- scan : scan the formula and return either the formula is SAT, UNSAT or the literal of the first unit clause
+scan :: Formula -> Scan
+scan [] = Empty -- empty formula -> SAT
+scan (x:xs)
+    | null x        = Unsat -- first clause is empty -> UNSAT
+    | length x == 1 = Unit (head x) -- literal of the first unit clause
+    | otherwise     = scan xs -- recursion
 
 
 
--- substitute : set literal to true and return reduced formula
+-- substitute : set literal to true and return the reduced formula
 substitute ::  Formula -> Literal -> Formula
 substitute [] _ = []
 substitute (x:xs) l
-    | l `elem` x = substitute xs l  -- l in the first clause, remove that clause, return substitution of the rest
-    | (-l) `elem` x = substitute (delete (-l) x : xs) l -- (-l) in the first clause, remove the first (-l) in the clause, return substitution of the remaining
-    | otherwise = x : substitute xs l -- either l or (-l) not in the first clause, return first clause ++ substitution of the rest
+    | l `elem` x    = substitute xs l  -- if l in the first clause, remove that clause, return substitution of the rest
+    | (-l) `elem` x = substitute (delete (-l) x : xs) l -- if (-l) in the first clause, remove the first (-l) in the clause, return substitution of the remaining
+    | otherwise     = x : substitute xs l -- if neither l or (-l) not in the first clause, return first clause ++ substitution of the rest
 
 -- solve : formula is sat
 solve :: Formula -> (Bool, Assignment)
-solve f = solveWith f []
+solve f = solveWithAssumption f []
 
 
--- solveWith : solve a formula, push assignment to canvas and return
-solveWith :: Formula -> Assignment -> (Bool, Assignment)
-solveWith [] canvas = (True, canvas)
-solveWith formula canvas =
-    case scanResult of  ScanEmptyClause -> (False, [])
-                        ScanUnitClause activated -> solveWith (substitute formula activated) (activated:canvas)
-                        ScanNothing
-                            | b1 -> (True, l1)
-                            | b2 -> (True, l2)
-                            | otherwise -> (False, [])
+-- solveWithAssumption : solve a formula, push assignment to assumption and return
+solveWithAssumption :: Formula -> Assignment -> (Bool, Assignment)
+solveWithAssumption [] assumption = (True, assumption)
+solveWithAssumption formula assumption =
+    case s of
+        Unsat           -> (False, [])
+        Unit unit  -> solveWithAssumption (substitute formula unit) (unit:assumption)
+        Empty
+            | b1        -> (True, l1)
+            | b2        -> (True, l2)
+            | otherwise -> (False, [])
     where 
-        scanResult = scanFormula formula
+        s = scan formula
         guess = head $ head formula
-        (b1, l1) = solveWith (substitute formula guess) (guess:canvas)
-        (b2, l2) = solveWith (substitute formula (-guess)) (-guess:canvas)
+        (b1, l1) = solveWithAssumption (substitute formula guess) (guess:assumption)
+        (b2, l2) = solveWithAssumption (substitute formula (-guess)) (-guess:assumption)
