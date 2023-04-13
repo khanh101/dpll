@@ -8,7 +8,7 @@ import System.Posix.Internals (puts)
 
 main :: IO ()
 main = do
-    f <- parse "test.cnf"
+    f <- parse "example.cnf"
     let (sat, assignment) = solve f
     if not sat
         then putStrLn "UNSAT"
