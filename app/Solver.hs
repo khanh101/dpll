@@ -12,7 +12,7 @@ data Scan = Unsat | Unit Literal | Guess deriving (Show)
 
 -- scan : scan the formula and return either the formula is SAT, UNSAT or the literal of the first unit clause
 scan :: Formula -> Scan
-scan [] = Guess
+scan [] = Guess -- no unsat or unit clause found
 scan (x:xs)
     | null x        = Unsat -- first clause is empty -> UNSAT
     | length x == 1 = Unit (head x) -- literal of the first unit clause
