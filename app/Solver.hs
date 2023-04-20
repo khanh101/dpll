@@ -8,11 +8,11 @@ type Formula = [[Literal]]
 
 type Assignment = [Literal]
 
-data Scan = Unsat | Unit Int | Otherwise deriving (Show)
+data Scan = Unsat | Unit Literal | Guess deriving (Show)
 
 -- scan : scan the formula and return either the formula is SAT, UNSAT or the literal of the first unit clause
 scan :: Formula -> Scan
-scan [] = Otherwise
+scan [] = Guess
 scan (x:xs)
     | null x        = Unsat -- first clause is empty -> UNSAT
     | length x == 1 = Unit (head x) -- literal of the first unit clause
@@ -40,7 +40,7 @@ solveWithAssumption formula assumption =
     case s of
         Unsat           -> (False, [])
         Unit unit  -> solveWithAssumption (substitute formula unit) (unit:assumption)
-        Otherwise
+        Guess
             | b1        -> (True, l1)
             | b2        -> (True, l2)
             | otherwise -> (False, [])
